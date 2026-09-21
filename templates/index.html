@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Multi-Agent Debugger</title>
+<meta name="description" content="Three AI agents that diagnose, fix and verify bugs in your code, then check your tests with mutation testing.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -28,11 +29,13 @@
     --font-display:  'Space Grotesk', sans-serif;
     --font-body:     'Inter', sans-serif;
     --font-mono:     'JetBrains Mono', monospace;
+    --ease:          cubic-bezier(.2,.8,.2,1);
   }
 
   *,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
-
+  html{ scroll-behavior:smooth; }
   @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
     *,*::before,*::after{ animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; }
   }
 
@@ -42,92 +45,169 @@
       radial-gradient(1100px 500px at 12% -10%, rgba(72,201,217,0.07), transparent 60%),
       radial-gradient(900px 500px at 100% 0%, rgba(240,167,66,0.05), transparent 55%),
       var(--bg);
+    background-attachment:fixed;
     color:var(--text);
     min-height:100vh;
-    padding:40px 24px 80px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
   }
+  a{ color:inherit; text-decoration:none; }
+  :focus-visible{ outline:2px solid var(--cyan); outline-offset:3px; border-radius:6px; }
 
-  .wrap{ max-width:1180px; margin:0 auto; }
-
-  /* ---------- Header ---------- */
-  header{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    gap:24px;
-    flex-wrap:wrap;
-    margin-bottom:36px;
-    opacity:0;
-    animation:rise .6s cubic-bezier(.2,.8,.2,1) forwards;
+  .wrap{ max-width:1180px; margin:0 auto; padding:0 24px; }
+  section{ padding:96px 0; scroll-margin-top:72px; }
+  .section-head{ max-width:640px; margin-bottom:48px; }
+  .section-head h2{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:34px;
+    line-height:1.15;
+    letter-spacing:-0.015em;
+    margin-bottom:14px;
   }
-  .eyebrow{
+  .section-head p{ color:var(--text-dim); font-size:15.5px; max-width:60ch; }
+  .tag{
     font-family:var(--font-mono);
     font-size:11px;
-    letter-spacing:.16em;
+    letter-spacing:.14em;
     text-transform:uppercase;
     color:var(--cyan);
-    display:flex;
+    display:inline-flex;
     align-items:center;
     gap:8px;
-    margin-bottom:10px;
+    margin-bottom:14px;
   }
-  .eyebrow::before{
+  .tag::before{
     content:"";
-    width:6px; height:6px;
-    border-radius:50%;
+    width:6px; height:6px; border-radius:50%;
     background:var(--cyan);
     box-shadow:0 0 0 3px var(--cyan-dim);
   }
-  h1{
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:11px 24px;
+    border:1px solid transparent;
+    border-radius:8px;
+    font-family:var(--font-display);
+    font-size:14px;
+    font-weight:600;
+    letter-spacing:.01em;
+    cursor:pointer;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .btn-primary{ background:var(--cyan); color:#06171a; }
+  .btn-primary:hover:not(:disabled){
+    background:#5fd6e5;
+    box-shadow:0 4px 18px rgba(72,201,217,0.25);
+    transform:translateY(-1px);
+  }
+  .btn-primary:active:not(:disabled){ transform:translateY(0); }
+  .btn-primary:disabled{ background:#2a3540; color:var(--text-faint); cursor:not-allowed; }
+  .btn-ghost{ background:transparent; color:var(--text); border-color:var(--hair); }
+  .btn-ghost:hover{ border-color:var(--cyan); color:var(--cyan); }
+  .btn-small{ padding:7px 14px; font-size:12.5px; border-radius:7px; }
+
+  /* ---------- Nav ---------- */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,13,19,0.78);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--panel-border);
+  }
+  .nav-row{ display:flex; align-items:center; justify-content:space-between; height:64px; }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:16px; letter-spacing:-0.01em; cursor:pointer; }
+  .brand svg{ width:26px; height:26px; }
+  .nav-links{ display:flex; align-items:center; gap:6px; }
+  .nav-links a.link{
+    padding:8px 12px;
+    font-size:13.5px;
+    color:var(--text-dim);
+    border-radius:7px;
+    transition:color .2s ease, background .2s ease;
+    cursor:pointer;
+  }
+  .nav-links a.link:hover{ color:var(--text); background:var(--bg-raised); }
+  .nav-links a.link.current{ color:var(--cyan); }
+  .nav-links .btn{ margin-left:10px; }
+  .menu-toggle{ display:none; background:none; border:1px solid var(--hair); color:var(--text); border-radius:8px; width:40px; height:40px; cursor:pointer; }
+  .menu-toggle svg{ width:18px; height:18px; }
+
+  /* ---------- Views ---------- */
+  .view{ display:none; }
+  .view.active{ display:block; animation:view-in .5s var(--ease); }
+  @keyframes view-in{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding:88px 0 72px; }
+  .hero-grid{ display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center; }
+  .hero h1{
     font-family:var(--font-display);
     font-weight:700;
-    font-size:32px;
-    letter-spacing:-0.01em;
-    margin-bottom:6px;
+    font-size:52px;
+    line-height:1.06;
+    letter-spacing:-0.025em;
+    margin-bottom:20px;
   }
-  .subtitle{
-    color:var(--text-dim);
-    font-size:13.5px;
-    max-width:560px;
-    line-height:1.6;
-  }
-  .meta{
-    font-family:var(--font-mono);
-    font-size:11px;
-    color:var(--text-faint);
-    text-align:right;
-    line-height:1.8;
-  }
-  .meta span{ color:var(--text-dim); }
+  .hero p.lead{ color:var(--text-dim); font-size:17px; max-width:52ch; margin-bottom:32px; }
+  .hero-actions{ display:flex; gap:12px; flex-wrap:wrap; }
+  .hero-note{ margin-top:26px; font-family:var(--font-mono); font-size:11.5px; color:var(--text-faint); }
+  .hero-note span{ color:var(--text-dim); }
 
-  /* ---------- Pipeline (signature element) ---------- */
+  /* Live run card (the one memorable moment) */
+  .run-card{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 30px 80px -30px rgba(72,201,217,0.14);
+  }
+  .card-bar{
+    display:flex; align-items:center; gap:8px;
+    padding:11px 14px;
+    border-bottom:1px solid var(--panel-border);
+    background:var(--bg-raised);
+  }
+  .dot{ width:8px; height:8px; border-radius:50%; }
+  .dot.r{ background:#5a4247; } .dot.y{ background:#5a5342; } .dot.g{ background:#3f5a4a; }
+  .card-title{ font-family:var(--font-mono); font-size:12px; color:var(--text-dim); margin-left:4px; }
+  .run-card .pipeline{ border:none; border-radius:0; margin:0; padding:26px 22px 22px; background:transparent; }
+  .diff{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    line-height:1.7;
+    border-top:1px solid var(--panel-border);
+    background:var(--bg-raised);
+  }
+  .diff .file{ padding:10px 16px; color:var(--text-faint); font-size:11.5px; border-bottom:1px solid var(--panel-border); }
+  .diff .ln{ padding:1px 16px; white-space:pre; overflow-x:auto; color:var(--text-dim); }
+  .diff .ln.del{ background:var(--red-dim); color:var(--red); }
+  .diff .ln.add{ background:var(--green-dim); color:var(--green); }
+  .diff-result{
+    padding:10px 16px;
+    border-top:1px solid var(--panel-border);
+    font-size:11.5px;
+    color:var(--text-faint);
+    display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
+  }
+  .diff-result b{ color:var(--green); font-weight:500; }
+
+  /* ---------- Pipeline (shared) ---------- */
   .pipeline{
     background:var(--panel);
     border:1px solid var(--panel-border);
     border-radius:14px;
     padding:26px 32px;
-    margin-bottom:28px;
-    opacity:0;
-    animation:rise .6s cubic-bezier(.2,.8,.2,1) .08s forwards;
   }
-  .pipeline-row{
-    display:flex;
-    align-items:center;
-  }
-  .stage{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:10px;
-    width:150px;
-    flex-shrink:0;
-  }
+  .pipeline-row{ display:flex; align-items:center; }
+  .stage{ display:flex; flex-direction:column; align-items:center; gap:10px; width:150px; flex-shrink:0; }
   .stage-node{
-    width:52px; height:52px;
-    border-radius:50%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    width:52px; height:52px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
     background:var(--bg-raised);
     border:1.5px solid var(--hair);
     color:var(--text-faint);
@@ -136,436 +216,1016 @@
   }
   .stage-node svg{ width:20px; height:20px; }
   .stage-ring{
-    position:absolute;
-    inset:-6px;
-    border-radius:50%;
-    border:1.5px solid transparent;
-    opacity:0;
+    position:absolute; inset:-6px; border-radius:50%;
+    border:1.5px solid transparent; opacity:0;
     transition:opacity .35s ease;
   }
   .stage-label{
-    font-family:var(--font-mono);
-    font-size:11px;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--text-faint);
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--text-faint);
     transition:color .35s ease;
   }
-  .stage-sub{
-    font-size:10.5px;
-    color:var(--text-faint);
-    opacity:.7;
-  }
+  .stage-sub{ font-size:10.5px; color:var(--text-faint); opacity:.7; }
   .connector{
-    flex:1;
-    height:1.5px;
-    background:var(--hair);
-    position:relative;
-    overflow:hidden;
-    margin:0 -4px;
-    top:-24px;
+    flex:1; height:1.5px; background:var(--hair);
+    position:relative; overflow:hidden; margin:0 -4px; top:-24px;
   }
   .connector::after{
-    content:"";
-    position:absolute;
-    top:0; left:-30%;
+    content:""; position:absolute; top:0; left:-30%;
     width:30%; height:100%;
     background:linear-gradient(90deg, transparent, var(--cyan), transparent);
     opacity:0;
   }
-  .connector.flowing::after{
-    opacity:1;
-    animation:flow 1.4s linear infinite;
-  }
+  .connector.flowing::after{ opacity:1; animation:flow 1.4s linear infinite; }
 
   .stage.active .stage-node{ border-color:var(--amber); color:var(--amber); background:var(--amber-dim); }
   .stage.active .stage-ring{ opacity:1; border-color:var(--amber); animation:pulse-ring 1.4s ease-out infinite; }
   .stage.active .stage-label{ color:var(--amber); }
-
   .stage.done .stage-node{ border-color:var(--green); color:var(--green); background:var(--green-dim); }
   .stage.done .stage-label{ color:var(--green); }
-
   .stage.failed .stage-node{ border-color:var(--red); color:var(--red); background:var(--red-dim); }
   .stage.failed .stage-label{ color:var(--red); }
 
-  @keyframes pulse-ring{
-    0%{ transform:scale(0.85); opacity:.9; }
-    100%{ transform:scale(1.25); opacity:0; }
-  }
-  @keyframes flow{
-    0%{ left:-30%; }
-    100%{ left:100%; }
-  }
+  @keyframes pulse-ring{ 0%{ transform:scale(0.85); opacity:.9; } 100%{ transform:scale(1.25); opacity:0; } }
+  @keyframes flow{ 0%{ left:-30%; } 100%{ left:100%; } }
 
-  /* ---------- Editors ---------- */
-  .grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:18px;
-    margin-bottom:20px;
-  }
-  .editor{
+  /* ---------- About ---------- */
+  .about-grid{ display:grid; grid-template-columns:1.2fr .8fr; gap:56px; align-items:start; }
+  .about-copy p{ color:var(--text-dim); font-size:15.5px; margin-bottom:18px; max-width:62ch; }
+  .about-copy p strong{ color:var(--text); font-weight:500; }
+  .stat-stack{ display:flex; flex-direction:column; gap:14px; }
+  .stat{
     background:var(--panel);
     border:1px solid var(--panel-border);
     border-radius:12px;
-    overflow:hidden;
-    opacity:0;
-    animation:rise .6s cubic-bezier(.2,.8,.2,1) .16s forwards;
+    padding:20px 22px;
+    display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+  }
+  .stat .num{ font-family:var(--font-display); font-weight:700; font-size:34px; letter-spacing:-0.02em; }
+  .stat .num.c{ color:var(--cyan); } .stat .num.a{ color:var(--amber); } .stat .num.g{ color:var(--green); }
+  .stat .lbl{ color:var(--text-dim); font-size:13.5px; text-align:right; max-width:20ch; }
+
+  /* ---------- Agents ---------- */
+  .agents{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .agent{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:12px;
+    padding:26px;
+    display:flex; flex-direction:column; gap:14px;
+    transition:border-color .25s ease;
+  }
+  .agent:hover{ border-color:#2c3d47; }
+  .agent .icon{
+    width:44px; height:44px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    border:1.5px solid; background:var(--bg-raised);
+  }
+  .agent .icon svg{ width:19px; height:19px; }
+  .agent.dx .icon{ color:var(--cyan); border-color:var(--cyan-dim); }
+  .agent.fx .icon{ color:var(--amber); border-color:var(--amber-dim); }
+  .agent.vf .icon{ color:var(--green); border-color:var(--green-dim); }
+  .agent h3{ font-family:var(--font-display); font-size:20px; font-weight:600; letter-spacing:-0.01em; }
+  .agent p{ color:var(--text-dim); font-size:14px; }
+  .agent .split{ margin-top:auto; border-top:1px solid var(--panel-border); padding-top:14px; display:grid; gap:8px; font-size:13px; }
+  .agent .split div{ display:flex; gap:10px; }
+  .agent .split span.k{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); width:52px; flex-shrink:0; padding-top:2px; }
+  .agent .split span.v{ color:var(--text-dim); }
+  .why{
+    margin-top:22px;
+    padding:20px 24px;
+    background:var(--bg-raised);
+    border:1px solid var(--panel-border);
+    border-left:3px solid var(--cyan);
+    border-radius:10px;
+    color:var(--text-dim);
+    font-size:14.5px;
+  }
+  .why strong{ color:var(--text); font-weight:500; }
+
+  /* ---------- Workflow (a real sequence, so numbered) ---------- */
+  .steps{ position:relative; display:grid; gap:0; max-width:820px; }
+  .steps::before{
+    content:""; position:absolute; left:19px; top:20px; bottom:20px;
+    width:1.5px; background:var(--hair);
+  }
+  .step{ position:relative; display:grid; grid-template-columns:40px 1fr; gap:22px; padding:0 0 30px; }
+  .step:last-child{ padding-bottom:0; }
+  .step .n{
+    width:40px; height:40px; border-radius:50%;
+    background:var(--bg-raised); border:1.5px solid var(--hair);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:13px; color:var(--text-dim);
+    position:relative; z-index:1;
+  }
+  .step.hl .n{ border-color:var(--amber); color:var(--amber); background:var(--amber-dim); }
+  .step.ok .n{ border-color:var(--green); color:var(--green); background:var(--green-dim); }
+  .step h3{ font-family:var(--font-display); font-size:17px; font-weight:600; margin:7px 0 4px; }
+  .step p{ color:var(--text-dim); font-size:14px; max-width:64ch; }
+  .step code{
+    font-family:var(--font-mono); font-size:12px; color:var(--cyan);
+    background:var(--bg-raised); border:1px solid var(--panel-border);
+    padding:1px 6px; border-radius:5px;
+  }
+
+  /* ---------- Features ---------- */
+  .features{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  .feature{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:12px;
+    padding:24px;
+    transition:border-color .25s ease;
+  }
+  .feature:hover{ border-color:#2c3d47; }
+  .feature svg{ width:22px; height:22px; color:var(--cyan); margin-bottom:16px; }
+  .feature h3{ font-family:var(--font-display); font-size:17px; font-weight:600; margin-bottom:8px; letter-spacing:-0.005em; }
+  .feature p{ color:var(--text-dim); font-size:13.5px; }
+
+  /* ---------- Mutation explainer ---------- */
+  .mut-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .mut{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:12px;
+    padding:20px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .mut .badge{
+    align-self:flex-start;
+    font-family:var(--font-mono); font-size:11px;
+    padding:3px 9px; border-radius:999px; border:1px solid;
+  }
+  .mut.killed .badge{ color:var(--green); border-color:var(--green-dim); background:var(--green-dim); }
+  .mut.survived .badge{ color:var(--amber); border-color:var(--amber-dim); background:var(--amber-dim); }
+  .mut.equiv .badge{ color:var(--cyan); border-color:var(--cyan-dim); background:var(--cyan-dim); }
+  .mut.gap .badge{ color:var(--red); border-color:var(--red-dim); background:var(--red-dim); }
+  .mut h3{ font-family:var(--font-display); font-size:16px; font-weight:600; }
+  .mut p{ color:var(--text-dim); font-size:13px; }
+  .verify-note{
+    margin-top:22px;
+    display:grid; grid-template-columns:1fr 1fr; gap:14px;
+  }
+  .verify-note div{
+    background:var(--bg-raised); border:1px solid var(--panel-border);
+    border-radius:10px; padding:18px 20px; color:var(--text-dim); font-size:13.5px;
+  }
+  .verify-note b{ display:block; color:var(--text); font-family:var(--font-display); font-weight:600; font-size:14.5px; margin-bottom:4px; }
+
+  /* ---------- Table / Proven ---------- */
+  .table-wrap{ background:var(--panel); border:1px solid var(--panel-border); border-radius:12px; overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; min-width:560px; }
+  th, td{ text-align:left; padding:15px 20px; font-size:13.5px; border-bottom:1px solid var(--panel-border); }
+  th{ font-family:var(--font-mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--text-faint); font-weight:500; background:var(--bg-raised); }
+  tr:last-child td{ border-bottom:none; }
+  td:first-child{ color:var(--text); }
+  td{ color:var(--text-dim); }
+  td .pass{ color:var(--green); font-family:var(--font-mono); font-size:12px; }
+  td code{ font-family:var(--font-mono); font-size:12px; color:var(--cyan); }
+
+  /* ---------- Limits ---------- */
+  .limits{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .limit{
+    background:var(--panel); border:1px solid var(--panel-border);
+    border-radius:12px; padding:20px 22px;
+    display:flex; gap:14px;
+  }
+  .limit svg{ width:18px; height:18px; color:var(--amber); flex-shrink:0; margin-top:3px; }
+  .limit h3{ font-family:var(--font-display); font-size:15px; font-weight:600; margin-bottom:4px; }
+  .limit p{ color:var(--text-dim); font-size:13.5px; }
+
+  /* ---------- CTA & footer ---------- */
+  .cta{
+    background:
+      radial-gradient(600px 220px at 15% 0%, rgba(72,201,217,0.10), transparent 70%),
+      var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:16px;
+    padding:52px 48px;
+    display:flex; align-items:center; justify-content:space-between; gap:32px; flex-wrap:wrap;
+  }
+  .cta h2{ font-family:var(--font-display); font-size:30px; font-weight:700; letter-spacing:-0.015em; margin-bottom:8px; }
+  .cta p{ color:var(--text-dim); max-width:48ch; }
+  footer{ border-top:1px solid var(--panel-border); padding:34px 0 46px; }
+  .foot-row{ display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; font-size:12.5px; color:var(--text-faint); }
+  .foot-row span{ font-family:var(--font-mono); }
+
+  /* ---------- Debugger page ---------- */
+  .debug-head{ padding:48px 0 32px; display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap; }
+  .debug-head h1{ font-family:var(--font-display); font-weight:700; font-size:32px; letter-spacing:-0.01em; margin-bottom:6px; }
+  .debug-head p{ color:var(--text-dim); font-size:13.5px; max-width:560px; line-height:1.6; }
+  .meta{ font-family:var(--font-mono); font-size:11px; color:var(--text-faint); text-align:right; line-height:1.8; }
+  .meta span{ color:var(--text-dim); }
+  #view-debug .pipeline{ margin-bottom:22px; }
+
+  .examples{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+  .examples .lbl{ font-size:13px; color:var(--text-dim); margin-right:4px; }
+  .chip{
+    font-family:var(--font-mono); font-size:12px;
+    background:var(--bg-raised); color:var(--text-dim);
+    border:1px solid var(--hair); border-radius:999px;
+    padding:6px 14px; cursor:pointer;
+    transition:border-color .2s ease, color .2s ease;
+  }
+  .chip:hover{ border-color:var(--cyan); color:var(--cyan); }
+
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:20px; }
+  .editor{
+    background:var(--panel);
+    border:1px solid var(--panel-border);
+    border-radius:12px; overflow:hidden;
     transition:border-color .25s ease, box-shadow .25s ease;
   }
-  .editor:nth-child(2){ animation-delay:.22s; }
-  .editor:focus-within{
-    border-color:#2c3d47;
-    box-shadow:0 0 0 3px rgba(72,201,217,0.08);
-  }
-  .editor-bar{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:11px 14px;
-    border-bottom:1px solid var(--panel-border);
-    background:var(--bg-raised);
-  }
-  .dot{ width:8px; height:8px; border-radius:50%; }
-  .dot.r{ background:#5a4247; } .dot.y{ background:#5a5342; } .dot.g{ background:#3f5a4a; }
-  .editor-title{
-    font-family:var(--font-mono);
-    font-size:12px;
-    color:var(--text-dim);
-    margin-left:4px;
-  }
+  .editor:focus-within{ border-color:#2c3d47; box-shadow:0 0 0 3px rgba(72,201,217,0.08); }
+  .editor-bar{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--panel-border); background:var(--bg-raised); }
+  .editor-bar .count{ margin-left:auto; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); }
   textarea{
-    width:100%;
-    height:300px;
-    display:block;
-    font-family:var(--font-mono);
-    font-size:12.5px;
-    line-height:1.6;
-    padding:16px;
-    border:none;
-    background:transparent;
-    color:var(--text);
-    resize:vertical;
+    width:100%; height:320px; display:block;
+    font-family:var(--font-mono); font-size:12.5px; line-height:1.6;
+    padding:16px; border:none; background:transparent; color:var(--text);
+    resize:vertical; tab-size:4;
   }
   textarea:focus{ outline:none; }
   textarea::placeholder{ color:var(--text-faint); }
 
-  /* ---------- Controls ---------- */
-  .controls{
-    display:flex;
-    align-items:center;
-    gap:16px;
-    margin-bottom:22px;
-    opacity:0;
-    animation:rise .6s cubic-bezier(.2,.8,.2,1) .28s forwards;
-  }
-  button{
-    position:relative;
-    padding:11px 26px;
-    background:var(--cyan);
-    color:#06171a;
-    border:none;
-    border-radius:8px;
-    font-family:var(--font-display);
-    font-size:14px;
-    font-weight:600;
-    letter-spacing:.01em;
-    cursor:pointer;
-    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
-    box-shadow:0 0 0 rgba(72,201,217,0);
-  }
-  button:hover:not(:disabled){
-    background:#5fd6e5;
-    box-shadow:0 4px 18px rgba(72,201,217,0.25);
-    transform:translateY(-1px);
-  }
-  button:active:not(:disabled){ transform:translateY(0); }
-  button:disabled{ background:#2a3540; color:var(--text-faint); cursor:not-allowed; }
-
-  #status{
-    font-family:var(--font-mono);
-    font-size:12.5px;
-    color:var(--text-dim);
-    display:flex;
-    align-items:center;
-    gap:8px;
-  }
+  .controls{ display:flex; align-items:center; gap:16px; margin-bottom:26px; flex-wrap:wrap; }
+  #status{ font-family:var(--font-mono); font-size:12.5px; color:var(--text-dim); display:flex; align-items:center; gap:8px; }
   #status.running{ color:var(--amber); }
   #status.done{ color:var(--green); }
   #status.error{ color:var(--red); }
-
   .spinner{
-    display:none;
-    width:14px; height:14px;
-    border:2px solid var(--hair);
-    border-top-color:var(--amber);
-    border-radius:50%;
-    animation:spin .7s linear infinite;
-    flex-shrink:0;
+    display:none; width:14px; height:14px;
+    border:2px solid var(--hair); border-top-color:var(--amber);
+    border-radius:50%; animation:spin .7s linear infinite; flex-shrink:0;
   }
   .spinner.visible{ display:inline-block; }
   @keyframes spin{ to{ transform:rotate(360deg); } }
+  .kbd{ margin-left:auto; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); }
+  .kbd kbd{ background:var(--bg-raised); border:1px solid var(--hair); border-radius:5px; padding:1px 6px; font-family:inherit; color:var(--text-dim); }
 
-  /* ---------- Output ---------- */
-  #output-section{
-    opacity:0;
-    animation:rise .6s cubic-bezier(.2,.8,.2,1) .34s forwards;
+  .out-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+  .tabs{ display:flex; gap:4px; background:var(--panel); border:1px solid var(--panel-border); border-radius:9px; padding:3px; }
+  .tab{
+    background:transparent; border:none; color:var(--text-dim);
+    font-family:var(--font-mono); font-size:12px;
+    padding:6px 14px; border-radius:6px; cursor:pointer;
+    transition:background .2s ease, color .2s ease;
   }
-  #output-section h2{
-    font-family:var(--font-mono);
-    font-size:12px;
-    letter-spacing:.1em;
-    text-transform:uppercase;
-    color:var(--text-dim);
-    margin-bottom:10px;
-  }
-  .terminal{
-    background:var(--bg-raised);
-    border:1px solid var(--panel-border);
-    border-radius:12px;
-    overflow:hidden;
-  }
-  .terminal-bar{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:11px 14px;
-    border-bottom:1px solid var(--panel-border);
-  }
-  .terminal-bar span{
-    font-family:var(--font-mono);
-    font-size:11.5px;
-    color:var(--text-faint);
-    margin-left:6px;
-  }
+  .tab:hover{ color:var(--text); }
+  .tab.on{ background:var(--bg-raised); color:var(--cyan); }
+  .out-actions{ display:flex; gap:8px; }
+  .terminal{ background:var(--bg-raised); border:1px solid var(--panel-border); border-radius:12px; overflow:hidden; }
+  .terminal-bar{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--panel-border); }
+  .terminal-bar span.t{ font-family:var(--font-mono); font-size:11.5px; color:var(--text-faint); margin-left:6px; }
   #output{
-    white-space:pre-wrap;
-    word-break:break-word;
-    font-family:var(--font-mono);
-    font-size:12.5px;
-    line-height:1.6;
-    color:#c9d1e0;
-    padding:18px;
-    min-height:140px;
-    max-height:600px;
-    overflow-y:auto;
+    white-space:pre-wrap; word-break:break-word;
+    font-family:var(--font-mono); font-size:12.5px; line-height:1.6;
+    color:#c9d1e0; padding:18px;
+    min-height:160px; max-height:640px; overflow-y:auto;
   }
   #output.empty{ color:var(--text-faint); }
   #output.error-text{ color:var(--red); }
 
-  @keyframes rise{
-    from{ opacity:0; transform:translateY(10px); }
-    to{ opacity:1; transform:translateY(0); }
-  }
+  /* ---------- Reveal on scroll (used once per section head, not per card) ---------- */
+  .reveal{ opacity:0; transform:translateY(14px); transition:opacity .7s var(--ease), transform .7s var(--ease); }
+  .reveal.in{ opacity:1; transform:none; }
 
   /* ---------- Responsive ---------- */
+  @media (max-width:980px){
+    .hero-grid, .about-grid{ grid-template-columns:1fr; gap:40px; }
+    .agents, .features{ grid-template-columns:1fr 1fr; }
+    .mut-grid{ grid-template-columns:1fr 1fr; }
+    .hero h1{ font-size:42px; }
+  }
   @media (max-width:760px){
-    .grid{ grid-template-columns:1fr; }
+    section{ padding:68px 0; }
+    .hero{ padding:56px 0 44px; }
+    .hero h1{ font-size:36px; }
+    .section-head h2{ font-size:28px; }
+    .agents, .features, .mut-grid, .limits, .verify-note, .grid{ grid-template-columns:1fr; }
+    .cta{ padding:34px 26px; }
+    .pipeline{ padding:22px; }
     .pipeline-row{ flex-wrap:wrap; row-gap:18px; }
     .connector{ display:none; }
     .stage{ width:auto; flex-direction:row; }
-    header{ flex-direction:column; align-items:flex-start; }
+    .run-card .pipeline{ padding:22px; }
+    .debug-head{ flex-direction:column; align-items:flex-start; }
     .meta{ text-align:left; }
+    .kbd{ display:none; }
+    .menu-toggle{ display:inline-flex; align-items:center; justify-content:center; }
+    .nav-links{
+      display:none; position:absolute; top:64px; left:0; right:0;
+      flex-direction:column; align-items:stretch; gap:2px;
+      padding:12px 24px 20px;
+      background:rgba(10,13,19,0.96);
+      border-bottom:1px solid var(--panel-border);
+    }
+    .nav-links.open{ display:flex; }
+    .nav-links .btn{ margin:8px 0 0; justify-content:center; }
   }
 </style>
 </head>
 <body>
 
-<div class="wrap">
-
-  <header>
-    <div>
-      <div class="eyebrow">Automated pipeline · Groq</div>
-      <h1>Multi-Agent Debugger</h1>
-      <p class="subtitle">Paste a source file and its test suite. Three agents run in sequence — diagnosis, fix, and mutation re-check — typically finishing in 30–120 seconds.</p>
+<!-- ============ NAV ============ -->
+<nav>
+  <div class="wrap nav-row">
+    <a class="brand" href="#/" aria-label="Multi-Agent Debugger home">
+      <svg viewBox="0 0 28 28" fill="none" aria-hidden="true">
+        <circle cx="5" cy="14" r="3.2" stroke="#48c9d9" stroke-width="1.6"/>
+        <circle cx="14" cy="14" r="3.2" stroke="#f0a742" stroke-width="1.6"/>
+        <circle cx="23" cy="14" r="3.2" stroke="#3ecf8e" stroke-width="1.6"/>
+        <path d="M8.2 14h2.6M17.2 14h2.6" stroke="#545e70" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      Multi-Agent Debugger
+    </a>
+    <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div class="nav-links" id="nav-links">
+      <a class="link" data-scroll="about">About</a>
+      <a class="link" data-scroll="agents">Agents</a>
+      <a class="link" data-scroll="how">How it works</a>
+      <a class="link" data-scroll="features">Key features</a>
+      <a class="link" data-scroll="limits">Limits</a>
+      <a class="btn btn-primary btn-small" href="#/debug">Open debugger</a>
     </div>
-    <div class="meta">RUNTIME <span>groq-api</span><br>MODE <span>diagnose → fix → verify</span></div>
+  </div>
+</nav>
+
+<!-- ============ HOME VIEW ============ -->
+<main class="view active" id="view-home">
+
+  <!-- Hero -->
+  <header class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="tag">Automated pipeline &middot; Groq</div>
+        <h1>Three agents find, fix and verify your bugs.</h1>
+        <p class="lead">Paste a source file and its pytest suite. One agent explains the root cause, one writes the patch, and one checks your tests with mutation testing, then confirms its own claims by running real code.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#/debug">Debug my code</a>
+          <a class="btn btn-ghost" data-scroll="how">See how it works</a>
+        </div>
+        <p class="hero-note">Typical run <span>30&ndash;120 s</span> &nbsp;&middot;&nbsp; Up to <span>3</span> fix attempts</p>
+      </div>
+
+      <div class="run-card" aria-label="Example of a completed run">
+        <div class="card-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="card-title">sum_of_squares &mdash; example run</span>
+        </div>
+        <div class="pipeline" data-pipeline="hero" data-loop="true"></div>
+        <div class="diff">
+          <div class="file">buggy_code.py &middot; sum_of_squares</div>
+          <div class="ln del">-    for i in range(1, n):</div>
+          <div class="ln add">+    for i in range(1, n + 1):</div>
+          <div class="diff-result"><span>off-by-one: the loop skipped n</span><b>tests pass</b></div>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <div class="pipeline">
-    <div class="pipeline-row" id="pipeline-row">
-      <div class="stage" id="stage-diagnose">
-        <div class="stage-node">
-          <div class="stage-ring"></div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.4-4.4" stroke-linecap="round"/></svg>
+  <!-- About -->
+  <section id="about">
+    <div class="wrap about-grid">
+      <div class="about-copy reveal">
+        <div class="tag">About</div>
+        <div class="section-head" style="margin-bottom:22px">
+          <h2>One job per agent, and nothing taken on trust.</h2>
         </div>
-        <div class="stage-label">Diagnose</div>
-        <div class="stage-sub">locate the fault</div>
+        <p>Most AI debugging tools ask a single model to read the error, guess the cause, rewrite the code and declare victory. When it is wrong, nothing catches it.</p>
+        <p>This project splits that work across <strong>specialised agents</strong> that hand work to each other like a small team. Each has a narrow prompt and a single responsibility, which makes it easier to keep reliable and easier to test on its own.</p>
+        <p>The result is a system that turns a failing test into a diagnosed, patched and <strong>verified</strong> fix with no human in the loop. When the AI makes a claim about your tests, the system re-checks it by executing the code instead of believing the explanation.</p>
       </div>
-      <div class="connector" id="conn-1"></div>
-      <div class="stage" id="stage-fix">
-        <div class="stage-node">
-          <div class="stage-ring"></div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 3.3a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8L8.5 21.5 3 22l.5-5.5L14.7 3.3Z" stroke-linejoin="round"/></svg>
+      <div class="stat-stack reveal">
+        <div class="stat"><div class="num c">3</div><div class="lbl">specialised agents, one job each</div></div>
+        <div class="stat"><div class="num a">3</div><div class="lbl">fix attempts before it stops, each with earlier context</div></div>
+        <div class="stat"><div class="num g">30&ndash;120s</div><div class="lbl">typical time for a full run</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agents -->
+  <section id="agents">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="tag">The team</div>
+        <h2>Meet the three agents</h2>
+        <p>Each agent gets a short, focused prompt and is explicitly told what it must not do.</p>
+      </div>
+
+      <div class="agents">
+        <article class="agent dx">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.4-4.4" stroke-linecap="round"/></svg></div>
+          <h3>Diagnosis agent</h3>
+          <p>Reads the broken code and the failing test output, then explains why it fails: the root cause, the faulty line and how confident it is.</p>
+          <div class="split">
+            <div><span class="k">Does</span><span class="v">Finds the root cause</span></div>
+            <div><span class="k">Never</span><span class="v">Writes a fix</span></div>
+          </div>
+        </article>
+        <article class="agent fx">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 3.3a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8L8.5 21.5 3 22l.5-5.5L14.7 3.3Z" stroke-linejoin="round"/></svg></div>
+          <h3>Fix agent</h3>
+          <p>Takes the diagnosis and writes corrected code. The patch is saved to disk and a diff is printed so you can see exactly what changed.</p>
+          <div class="split">
+            <div><span class="k">Does</span><span class="v">Writes the patch</span></div>
+            <div><span class="k">Never</span><span class="v">Judges its own fix</span></div>
+          </div>
+        </article>
+        <article class="agent vf">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3>Mutation re-check agent</h3>
+          <p>Once tests pass, it reviews every mutant your tests missed and decides whether it is harmless or a genuine hole in your test suite.</p>
+          <div class="split">
+            <div><span class="k">Does</span><span class="v">Verifies the fix is real</span></div>
+            <div><span class="k">Never</span><span class="v">Writes code</span></div>
+          </div>
+        </article>
+      </div>
+
+      <div class="why reveal"><strong>Why three agents and not one?</strong> A narrow, focused prompt is more reliable than asking one model to diagnose, patch and grade its own work in a single step. When something goes wrong you also know which agent to look at.</div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="how">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="tag">Workflow</div>
+        <h2>From failing test to verified fix</h2>
+        <p>The orchestrator is the script that runs the whole sequence and passes context between agents.</p>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="n">1</div>
+          <div><h3>Run the tests</h3><p>The orchestrator runs <code>pytest</code> first to check whether the code is broken at all. If everything passes, it skips straight to verification.</p></div>
         </div>
-        <div class="stage-label">Fix</div>
-        <div class="stage-sub">patch the source</div>
-      </div>
-      <div class="connector" id="conn-2"></div>
-      <div class="stage" id="stage-verify">
-        <div class="stage-node">
-          <div class="stage-ring"></div>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="step hl">
+          <div class="n">2</div>
+          <div><h3>Diagnose</h3><p>The Diagnosis agent reads the code and the error output and returns the root cause, the faulty line and a confidence level.</p></div>
         </div>
-        <div class="stage-label">Verify</div>
-        <div class="stage-sub">mutation re-check</div>
+        <div class="step hl">
+          <div class="n">3</div>
+          <div><h3>Fix, then re-run</h3><p>The Fix agent writes a patch, it is saved to disk, and the tests run again. If they still fail, the loop goes back to diagnosis with what was already tried, up to three times.</p></div>
+        </div>
+        <div class="step">
+          <div class="n">4</div>
+          <div><h3>Mutate the fixed code</h3><p>A custom mutation engine injects small fake bugs (mutants) and re-runs your tests against each. A mutant your tests catch is <em>killed</em>; one they miss has <em>survived</em>.</p></div>
+        </div>
+        <div class="step">
+          <div class="n">5</div>
+          <div><h3>Judge every survivor</h3><p>The re-check agent labels each survivor as an equivalent mutant or a real coverage gap. The system then runs the code itself to test that claim.</p></div>
+        </div>
+        <div class="step ok">
+          <div class="n">6</div>
+          <div><h3>Final report</h3><p>You get the fixed code, a verdict, recommended new tests, and a cost and time summary.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="tag">Key features</div>
+        <h2>Built to be checked, not trusted</h2>
+        <p>The features that matter most are the ones that stop the AI from being confidently wrong.</p>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5Z"/><path d="M3 13l9 5 9-5"/></svg>
+          <h3>Specialised multi-agent design</h3>
+          <p>Diagnosis, fixing and verification are separate agents with separate prompts, so each one stays focused.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.5-5.8"/><path d="M20 4v4h-4"/></svg>
+          <h3>Retry loop with memory</h3>
+          <p>A failed fix is not the end. The system tries again, up to three times, using the earlier failed diagnosis as context.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3c0 5 8 5 8 9s-8 4-8 9"/><path d="M16 3c0 5-8 5-8 9s8 4 8 9"/></svg>
+          <h3>Custom mutation engine</h3>
+          <p>Built in-house because <code style="font-family:var(--font-mono);font-size:12px;color:var(--cyan)">mutmut</code> does not run on native Windows. It mutates comparisons, booleans, arithmetic and constants.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.3 8-8 9-4.7-1-8-4.5-8-9V6l8-3Z"/><path d="M9 12l2 2 4-4"/></svg>
+          <h3>Self-verifying layer</h3>
+          <p>Every &ldquo;this mutant is harmless&rdquo; claim is checked by running real code, with line-coverage and boundary-value tracing on the proof input.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          <h3>Rate-limit resilient</h3>
+          <p>Per-minute token limits trigger an automatic retry with back-off instead of a crash. Daily limits are reported clearly.</p>
+        </div>
+        <div class="feature">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 14h4"/></svg>
+          <h3>Browser debugger</h3>
+          <p>Paste code, press run, watch the three stages light up, then copy or download the fixed file.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mutation explained -->
+  <section id="mutation">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="tag">Mutation testing</div>
+        <h2>How your tests get graded</h2>
+        <p>Mutation testing deliberately breaks your code in small ways to see whether your tests notice.</p>
+      </div>
+
+      <div class="mut-grid">
+        <div class="mut killed"><span class="badge">killed</span><h3>Tests caught it</h3><p>A fake bug was injected and a test failed. Your coverage is doing its job.</p></div>
+        <div class="mut survived"><span class="badge">survived</span><h3>Tests missed it</h3><p>The fake bug slipped through. It could be a real gap or a harmless change.</p></div>
+        <div class="mut equiv"><span class="badge">equivalent mutant</span><h3>Looks different, acts the same</h3><p>Behaves identically for every input, so no test could ever tell the difference.</p></div>
+        <div class="mut gap"><span class="badge">real coverage gap</span><h3>Behaves differently, untested</h3><p>The change alters behaviour and nothing checks it. The report suggests a new test.</p></div>
+      </div>
+
+      <div class="verify-note">
+        <div><b>Line-coverage check</b>Before any claim is trusted, the system confirms the proof input actually executed the mutated line.</div>
+        <div><b>Boundary-value check</b>It then confirms the input&rsquo;s runtime value sits in the narrow zone where the original and the mutant disagree.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Proven -->
+  <section id="proven">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="tag">Track record</div>
+        <h2>What has been proven in real runs</h2>
+        <p>These are live runs on deliberately created bugs, not simulations.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Test case</th><th>What happened</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Off-by-one in <code>sum_of_squares</code></td><td>Diagnosed, fixed and verified</td><td><span class="pass">passed</span></td></tr>
+            <tr><td>Two interacting bugs in <code>validate_password</code></td><td>Both found and fixed in a single diagnosis pass</td><td><span class="pass">passed</span></td></tr>
+            <tr><td>Forced two-round retry</td><td>First fix was partial, the second caught the rest</td><td><span class="pass">proven live</span></td></tr>
+            <tr><td>Checkout system <code>order_engine.py</code></td><td>Found a deceptive tax-order bug, fixed and verified</td><td><span class="pass">passed</span></td></tr>
+            <tr><td>Mutation re-check accuracy</td><td>Caught its own wrong reasoning several times and self-corrected</td><td><span class="pass">passed</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Limits -->
+  <section id="limits">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="tag">Honest limits</div>
+        <h2>What it cannot do yet</h2>
+        <p>Knowing where a tool stops is part of using it well.</p>
+      </div>
+      <div class="limits">
+        <div class="limit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>
+          <div><h3>Needs a failing test</h3><p>It only fixes bugs that a failing test points at. A bug with no test is invisible to it.</p></div>
+        </div>
+        <div class="limit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>
+          <div><h3>Limited mutation types</h3><p>Mutants cover comparisons, booleans, arithmetic and constants. Mutable default arguments, closures, race conditions and security issues are out of scope.</p></div>
+        </div>
+        <div class="limit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>
+          <div><h3>No accuracy benchmark</h3><p>It was tested on a small set of deliberate bugs, so there is no formal detection percentage to quote.</p></div>
+        </div>
+        <div class="limit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>
+          <div><h3>Depends on the model</h3><p>Diagnosis quality follows the underlying model, which is why the re-check layer verifies by execution wherever it can.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section style="padding-top:24px">
+    <div class="wrap">
+      <div class="cta">
+        <div>
+          <h2>Try it on your own bug</h2>
+          <p>Load a built-in example or paste your own file and tests. Most runs finish in about a minute.</p>
+        </div>
+        <a class="btn btn-primary" href="#/debug">Open debugger</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ DEBUG VIEW ============ -->
+<main class="view" id="view-debug">
+  <div class="wrap">
+
+    <div class="debug-head">
+      <div>
+        <div class="tag">Debugger</div>
+        <h1>Debug your code</h1>
+        <p>Paste a source file and its test suite. Three agents run in sequence &mdash; diagnosis, fix, and mutation re-check &mdash; typically finishing in 30&ndash;120 seconds.</p>
+      </div>
+      <div class="meta">RUNTIME <span>groq-api</span><br>MODE <span>diagnose &rarr; fix &rarr; verify</span></div>
+    </div>
+
+    <div class="pipeline" data-pipeline="debug"></div>
+
+    <div class="examples">
+      <span class="lbl">Try an example:</span>
+      <button class="chip" data-example="squares">Off-by-one</button>
+      <button class="chip" data-example="password">Two interacting bugs</button>
+      <button class="chip" data-example="clear">Clear both</button>
+    </div>
+
+    <div class="grid">
+      <div class="editor">
+        <div class="editor-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="card-title">buggy_code.py</span>
+          <span class="count" id="count-source">0 lines</span>
+        </div>
+        <textarea id="source" spellcheck="false" placeholder="Paste the source file to debug&hellip;"></textarea>
+      </div>
+      <div class="editor">
+        <div class="editor-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="card-title">test_buggy_code.py</span>
+          <span class="count" id="count-tests">0 lines</span>
+        </div>
+        <textarea id="tests" spellcheck="false" placeholder="Paste the pytest test file&hellip; (it should import from buggy_code)"></textarea>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="run-btn">Run debug pipeline</button>
+      <span class="spinner" id="spinner"></span>
+      <span id="status" role="status" aria-live="polite"></span>
+      <span class="kbd"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to run</span>
+    </div>
+
+    <div id="output-section" style="padding-bottom:80px">
+      <div class="out-head">
+        <div class="tabs" role="tablist">
+          <button class="tab on" id="tab-report" role="tab" aria-selected="true">Report</button>
+          <button class="tab" id="tab-fixed" role="tab" aria-selected="false">Fixed code</button>
+        </div>
+        <div class="out-actions">
+          <button class="btn btn-ghost btn-small" id="copy-btn">Copy</button>
+          <button class="btn btn-ghost btn-small" id="download-btn">Download fixed file</button>
+        </div>
+      </div>
+      <div class="terminal">
+        <div class="terminal-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="t" id="out-title">result.log</span>
+        </div>
+        <div id="output" class="empty">Load an example or paste your own code, then run the pipeline. The report and the fixed file will appear here.</div>
       </div>
     </div>
   </div>
+</main>
 
-  <div class="grid">
-    <div class="editor">
-      <div class="editor-bar">
-        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="editor-title">buggy_code.py</span>
-      </div>
-      <textarea id="source" spellcheck="false" placeholder="Paste the source file to debug…"></textarea>
-    </div>
-    <div class="editor">
-      <div class="editor-bar">
-        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span class="editor-title">test_buggy_code.py</span>
-      </div>
-      <textarea id="tests" spellcheck="false" placeholder="Paste the pytest test file…"></textarea>
-    </div>
+<footer>
+  <div class="wrap foot-row">
+    <div>Multi-Agent Debugger &mdash; diagnose, fix, verify.</div>
+    <span>runtime: groq-api</span>
   </div>
-
-  <div class="controls">
-    <button id="run-btn" onclick="runPipeline()">Run debug pipeline</button>
-    <span class="spinner" id="spinner"></span>
-    <span id="status"></span>
-  </div>
-
-  <div id="output-section">
-    <h2>Output</h2>
-    <div class="terminal">
-      <div class="terminal-bar">
-        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
-        <span>result.log</span>
-      </div>
-      <div id="output" class="empty">Results will appear here once the pipeline finishes.</div>
-    </div>
-  </div>
-
-</div>
+</footer>
 
 <script>
-  const stageEls = {
-    diagnose: document.getElementById('stage-diagnose'),
-    fix:      document.getElementById('stage-fix'),
-    verify:   document.getElementById('stage-verify'),
-  };
-  const conn1 = document.getElementById('conn-1');
-  const conn2 = document.getElementById('conn-2');
+/* =========================================================
+   Pipeline visual (shared by hero + debugger)
+   ========================================================= */
+const ICONS = {
+  diagnose:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.4-4.4" stroke-linecap="round"/></svg>',
+  fix:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14.7 3.3a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8L8.5 21.5 3 22l.5-5.5L14.7 3.3Z" stroke-linejoin="round"/></svg>',
+  verify:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 12l5 5L20 6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
 
-  function resetPipeline(){
-    Object.values(stageEls).forEach(el => el.classList.remove('active','done','failed'));
-    conn1.classList.remove('flowing');
-    conn2.classList.remove('flowing');
+class Pipeline {
+  constructor(root){
+    this.root = root;
+    root.innerHTML = `
+      <div class="pipeline-row">
+        ${this.stageHTML('diagnose','Diagnose','locate the fault')}
+        <div class="connector"></div>
+        ${this.stageHTML('fix','Fix','patch the source')}
+        <div class="connector"></div>
+        ${this.stageHTML('verify','Verify','mutation re-check')}
+      </div>`;
+    this.stages = {
+      diagnose: root.querySelector('[data-stage="diagnose"]'),
+      fix:      root.querySelector('[data-stage="fix"]'),
+      verify:   root.querySelector('[data-stage="verify"]'),
+    };
+    const c = root.querySelectorAll('.connector');
+    this.c1 = c[0]; this.c2 = c[1];
+    this.timers = [];
   }
-
-  let stageTimers = [];
-  function clearStageTimers(){
-    stageTimers.forEach(t => clearTimeout(t));
-    stageTimers = [];
+  stageHTML(key,label,sub){
+    return `<div class="stage" data-stage="${key}">
+      <div class="stage-node"><div class="stage-ring"></div>${ICONS[key]}</div>
+      <div class="stage-label">${label}</div><div class="stage-sub">${sub}</div></div>`;
   }
-
-  // Simulates the three-stage visual progression while the single /run
-  // request is in flight (the API returns one combined result, not
-  // per-stage events).
-  function animateStages(){
-    resetPipeline();
-    stageEls.diagnose.classList.add('active');
-
-    stageTimers.push(setTimeout(() => {
-      stageEls.diagnose.classList.remove('active');
-      stageEls.diagnose.classList.add('done');
-      conn1.classList.add('flowing');
-      stageEls.fix.classList.add('active');
+  reset(){
+    Object.values(this.stages).forEach(el => el.classList.remove('active','done','failed'));
+    this.c1.classList.remove('flowing'); this.c2.classList.remove('flowing');
+  }
+  clearTimers(){ this.timers.forEach(clearTimeout); this.timers = []; }
+  // Visual progression while the single /run request is in flight
+  // (the API returns one combined result, not per-stage events).
+  animate(){
+    this.clearTimers(); this.reset();
+    this.stages.diagnose.classList.add('active');
+    this.timers.push(setTimeout(() => {
+      this.stages.diagnose.classList.replace('active','done');
+      this.c1.classList.add('flowing');
+      this.stages.fix.classList.add('active');
     }, 1400));
-
-    stageTimers.push(setTimeout(() => {
-      stageEls.fix.classList.remove('active');
-      stageEls.fix.classList.add('done');
-      conn1.classList.remove('flowing');
-      conn2.classList.add('flowing');
-      stageEls.verify.classList.add('active');
+    this.timers.push(setTimeout(() => {
+      this.stages.fix.classList.replace('active','done');
+      this.c1.classList.remove('flowing');
+      this.c2.classList.add('flowing');
+      this.stages.verify.classList.add('active');
     }, 3200));
   }
-
-  function settlePipeline(success){
-    clearStageTimers();
-    conn1.classList.remove('flowing');
-    conn2.classList.remove('flowing');
-    stageEls.diagnose.classList.remove('active');
-    stageEls.fix.classList.remove('active');
-    stageEls.verify.classList.remove('active');
-    stageEls.diagnose.classList.add(success ? 'done' : 'done');
-    stageEls.fix.classList.add('done');
-    stageEls.verify.classList.add(success ? 'done' : 'failed');
+  settle(success){
+    this.clearTimers();
+    this.c1.classList.remove('flowing'); this.c2.classList.remove('flowing');
+    Object.values(this.stages).forEach(el => el.classList.remove('active','done','failed'));
+    this.stages.diagnose.classList.add('done');
+    this.stages.fix.classList.add('done');
+    this.stages.verify.classList.add(success ? 'done' : 'failed');
   }
+  // Decorative loop for the hero card
+  loop(){
+    const cycle = () => {
+      this.animate();
+      this.timers.push(setTimeout(() => this.settle(true), 5200));
+      this.timers.push(setTimeout(cycle, 9200));
+    };
+    cycle();
+  }
+}
 
-  async function runPipeline() {
-    const source = document.getElementById('source').value.trim();
-    const tests  = document.getElementById('tests').value.trim();
+const heroPipe  = new Pipeline(document.querySelector('[data-pipeline="hero"]'));
+const debugPipe = new Pipeline(document.querySelector('[data-pipeline="debug"]'));
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) heroPipe.loop();
+else heroPipe.settle(true);
 
-    if (!source || !tests) {
-      setStatus('error', 'Please paste both source code and test code before running.');
-      return;
+/* =========================================================
+   Routing: #/  (site)   and   #/debug  (debugger)
+   ========================================================= */
+const viewHome  = document.getElementById('view-home');
+const viewDebug = document.getElementById('view-debug');
+const navLinks  = document.getElementById('nav-links');
+const menuBtn   = document.getElementById('menu-toggle');
+let pendingScroll = null;
+
+function route(){
+  const debug = location.hash.startsWith('#/debug');
+  viewHome.classList.toggle('active', !debug);
+  viewDebug.classList.toggle('active', debug);
+  document.title = debug ? 'Debugger · Multi-Agent Debugger' : 'Multi-Agent Debugger';
+  if (pendingScroll){
+    const id = pendingScroll; pendingScroll = null;
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({behavior:'smooth'}));
+  } else {
+    window.scrollTo({top:0});
+  }
+  navLinks.classList.remove('open');
+  menuBtn.setAttribute('aria-expanded','false');
+}
+window.addEventListener('hashchange', route);
+route();
+
+document.querySelectorAll('[data-scroll]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const id = a.dataset.scroll;
+    if (viewHome.classList.contains('active')){
+      document.getElementById(id)?.scrollIntoView({behavior:'smooth'});
+      navLinks.classList.remove('open');
+      menuBtn.setAttribute('aria-expanded','false');
+    } else {
+      pendingScroll = id;
+      location.hash = '#/';
     }
+  });
+});
+menuBtn.addEventListener('click', () => {
+  const open = navLinks.classList.toggle('open');
+  menuBtn.setAttribute('aria-expanded', String(open));
+});
 
-    const btn     = document.getElementById('run-btn');
-    const spinner = document.getElementById('spinner');
-    const output  = document.getElementById('output');
+/* Reveal section headings once as they enter view */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(en => { if (en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+}, { threshold:.15 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-    btn.disabled = true;
-    spinner.classList.add('visible');
-    output.classList.remove('error-text');
-    output.classList.add('empty');
-    output.textContent = '';
-    setStatus('running', 'Diagnosing — multiple AI API calls in progress…');
-    animateStages();
+/* =========================================================
+   Debugger
+   ========================================================= */
+const EXAMPLES = {
+  squares: {
+    source:
+`def sum_of_squares(n):
+    """Return 1^2 + 2^2 + ... + n^2."""
+    total = 0
+    for i in range(1, n):
+        total += i * i
+    return total
+`,
+    tests:
+`from buggy_code import sum_of_squares
 
-    try {
-      const resp = await fetch('/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source_code: source, test_code: tests }),
-      });
 
-      const data = await resp.json();
+def test_zero():
+    assert sum_of_squares(0) == 0
 
-      if (!resp.ok || data.error) {
-        settlePipeline(false);
-        output.classList.remove('empty');
-        output.classList.add('error-text');
-        output.textContent = data.error || `HTTP ${resp.status}`;
-        setStatus('error', 'Pipeline returned an error.');
-      } else {
-        settlePipeline(true);
-        output.classList.remove('empty');
-        output.textContent = data.output || '(no output)';
-        setStatus('done', 'Done.');
-      }
-    } catch (err) {
-      clearStageTimers();
-      resetPipeline();
-      output.classList.remove('empty');
-      output.classList.add('error-text');
-      output.textContent = `Network error: ${err.message}`;
-      setStatus('error', 'Could not reach the server.');
-    } finally {
-      btn.disabled = false;
-      spinner.classList.remove('visible');
+
+def test_one():
+    assert sum_of_squares(1) == 1
+
+
+def test_three():
+    assert sum_of_squares(3) == 14
+
+
+def test_five():
+    assert sum_of_squares(5) == 55
+`
+  },
+  password: {
+    source:
+`def validate_password(pw):
+    """A valid password has at least 8 characters, a digit and an uppercase letter."""
+    if len(pw) <= 8:
+        return False
+    has_digit = any(c.isdigit() for c in pw)
+    has_upper = any(c.isupper() for c in pw)
+    return has_digit or has_upper
+`,
+    tests:
+`from buggy_code import validate_password
+
+
+def test_too_short():
+    assert validate_password("Ab1") is False
+
+
+def test_exactly_eight_is_valid():
+    assert validate_password("Abcdef12") is True
+
+
+def test_missing_uppercase():
+    assert validate_password("abcdefg1") is False
+
+
+def test_missing_digit():
+    assert validate_password("ABCDEFGH") is False
+
+
+def test_strong_password():
+    assert validate_password("Correct-Horse-9") is True
+`
+  }
+};
+
+const $ = id => document.getElementById(id);
+const srcEl = $('source'), testEl = $('tests'), outEl = $('output');
+const runBtn = $('run-btn'), spinner = $('spinner');
+let lastReport = '', lastFixed = '', activeTab = 'report', timerId = null;
+
+function updateCounts(){
+  const n = v => v.trim() ? v.split('\n').length : 0;
+  $('count-source').textContent = n(srcEl.value) + ' lines';
+  $('count-tests').textContent  = n(testEl.value) + ' lines';
+}
+srcEl.addEventListener('input', updateCounts);
+testEl.addEventListener('input', updateCounts);
+
+document.querySelectorAll('[data-example]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.example;
+    if (key === 'clear'){ srcEl.value = ''; testEl.value = ''; }
+    else { srcEl.value = EXAMPLES[key].source; testEl.value = EXAMPLES[key].tests; }
+    updateCounts();
+    debugPipe.clearTimers(); debugPipe.reset();
+    setStatus('', '');
+  });
+});
+
+function setStatus(cls, msg){
+  const el = $('status');
+  el.className = cls; el.textContent = msg;
+}
+
+function showTab(tab){
+  activeTab = tab;
+  $('tab-report').classList.toggle('on', tab === 'report');
+  $('tab-fixed').classList.toggle('on', tab === 'fixed');
+  $('tab-report').setAttribute('aria-selected', tab === 'report');
+  $('tab-fixed').setAttribute('aria-selected', tab === 'fixed');
+  $('out-title').textContent = tab === 'report' ? 'result.log' : 'buggy_code.py (fixed)';
+  const text = tab === 'report' ? lastReport : lastFixed;
+  if (text){ outEl.classList.remove('empty'); outEl.textContent = text; }
+  else {
+    outEl.classList.add('empty');
+    outEl.textContent = tab === 'report'
+      ? 'Results will appear here once the pipeline finishes.'
+      : 'The patched source file will appear here after a run.';
+  }
+}
+$('tab-report').addEventListener('click', () => showTab('report'));
+$('tab-fixed').addEventListener('click',  () => showTab('fixed'));
+
+$('copy-btn').addEventListener('click', async () => {
+  const text = activeTab === 'report' ? lastReport : lastFixed;
+  if (!text) return;
+  try { await navigator.clipboard.writeText(text); flash($('copy-btn'), 'Copied'); }
+  catch { flash($('copy-btn'), 'Copy failed'); }
+});
+$('download-btn').addEventListener('click', () => {
+  if (!lastFixed){ flash($('download-btn'), 'Run a fix first'); return; }
+  const url = URL.createObjectURL(new Blob([lastFixed], {type:'text/x-python'}));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'buggy_code_fixed.py'; a.click();
+  URL.revokeObjectURL(url);
+});
+function flash(btn, msg){
+  const old = btn.textContent; btn.textContent = msg;
+  setTimeout(() => btn.textContent = old, 1400);
+}
+
+async function runPipeline(){
+  const source = srcEl.value.trim();
+  const tests  = testEl.value.trim();
+
+  if (!source || !tests){
+    setStatus('error', 'Paste both the source code and the test code, or load an example.');
+    return;
+  }
+
+  runBtn.disabled = true;
+  spinner.classList.add('visible');
+  lastReport = ''; lastFixed = '';
+  showTab('report');
+  outEl.classList.remove('error-text');
+  const t0 = Date.now();
+  timerId = setInterval(() => {
+    setStatus('running', `Running the agents… ${Math.floor((Date.now()-t0)/1000)}s (several AI API calls in progress)`);
+  }, 500);
+  setStatus('running', 'Diagnosing… (several AI API calls in progress)');
+  debugPipe.animate();
+
+  try{
+    const resp = await fetch('/run', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ source_code: source, test_code: tests }),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok || data.error){
+      debugPipe.settle(false);
+      outEl.classList.remove('empty');
+      outEl.classList.add('error-text');
+      outEl.textContent = data.error || `HTTP ${resp.status}`;
+      setStatus('error', 'The pipeline returned an error.');
+    } else {
+      const failed = data.returncode !== 0;
+      debugPipe.settle(!failed);
+      lastReport = data.output || '(no output)';
+      lastFixed  = data.fixed_code || '';
+      showTab('report');
+      const secs = Math.round((Date.now()-t0)/1000);
+      setStatus(failed ? 'error' : 'done',
+        failed ? `Finished in ${secs}s with a non-zero exit code. Check the report.`
+               : `Done in ${secs}s.` + (data.changed ? ' The Fixed code tab has the patched file.' : ''));
     }
+  } catch (err){
+    debugPipe.clearTimers(); debugPipe.reset();
+    outEl.classList.remove('empty');
+    outEl.classList.add('error-text');
+    outEl.textContent = `Network error: ${err.message}\n\nMake sure the server is running: python app.py`;
+    setStatus('error', 'Could not reach the server.');
+  } finally {
+    clearInterval(timerId);
+    runBtn.disabled = false;
+    spinner.classList.remove('visible');
   }
-
-  function setStatus(cls, msg) {
-    const el = document.getElementById('status');
-    el.className = cls;
-    el.textContent = msg;
-  }
+}
+runBtn.addEventListener('click', runPipeline);
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && viewDebug.classList.contains('active') && !runBtn.disabled) runPipeline();
+});
 </script>
-
 </body>
 </html>
