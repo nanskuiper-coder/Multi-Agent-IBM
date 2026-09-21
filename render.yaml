@@ -1,9 +1,11 @@
 services:
   - type: web
     name: sentinel-debugger
-    env: python
+    runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app --timeout 300 --workers 1
     envVars:
-      - key: GEMINI_API_KEY
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: GROQ_API_KEY
         sync: false
